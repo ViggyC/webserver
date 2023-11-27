@@ -15,6 +15,7 @@ app.use(express.json());
 app.post("/api/chat-completions", async (req, res) => {
   try {
     const { prompt } = req.body;
+    console.log(prompt);
     const response = await axios.post(
       "https://api.openai.com/v1/chat/completions",
       {
