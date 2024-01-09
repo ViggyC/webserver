@@ -87,7 +87,7 @@ app.post("/send_mail", (req, res) => {
         console.log(error);
         res.send("error");
       } else {
-        console.log("Email sent :) -Vignesh " + info.response);
+        console.log("Email sent: " + info.response);
         res.send("success");
       }
     });
