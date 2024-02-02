@@ -26,6 +26,10 @@ oAuth2Client.setCredentials({ refresh_token: REFRESH_TOKEN });
 app.use(cors()); // Enable CORS for all routes
 app.use(express.json());
 
+app.get("/", async (req, res) => {
+  res.send("Nothing to see here");
+});
+
 app.post("/api/chat-completions", async (req, res) => {
   try {
     const { prompt } = req.body;
