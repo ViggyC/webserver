@@ -30,18 +30,26 @@ app.get("/", async (req, res) => {
   res.send("Nothing to see here");
 });
 
+let memory = [];
+
 app.post("/api/chat-completions", async (req, res) => {
   try {
     const { prompt } = req.body;
-    console.log(prompt);
+    console.log("User prompt: ", prompt);
+
+    const messages = [
+      { role: "system", content: "You are a helpful assistant." },
+      ...memory.map((msg) => ({ role: "user", content: msg })),
+      { role: "user", content: prompt }, // Add the current prompt to the end
+    ];
+
+    memory.push(prompt); // Push the current prompt to memory
+
     const response = await axios.post(
       "https://api.openai.com/v1/chat/completions",
       {
         model: "gpt-3.5-turbo",
-        messages: [
-          { role: "system", content: "You are a helpful assistant." },
-          { role: "user", content: prompt },
-        ],
+        messages: messages,
       },
       {
         headers: {
@@ -51,8 +59,12 @@ app.post("/api/chat-completions", async (req, res) => {
       }
     );
 
-    console.log(response.data.choices[0].message.content);
-    res.json(response.data.choices[0].message.content);
+    console.log("Response:\n", response.data.choices[0].message.content);
+    const formattedResponse = formatResponse(
+      response.data.choices[0].message.content
+    );
+
+    res.send(formattedResponse);
   } catch (error) {
     console.error(
       "Error:",
@@ -60,6 +72,12 @@ app.post("/api/chat-completions", async (req, res) => {
     );
     res.status(500).json({ error: "Internal Server Error" });
   }
+});
+
+// Route to clear the history
+app.post("/api/clear-history", (req, res) => {
+  memory = []; // Reset the memory array to an empty array
+  res.json({ message: "Conversation history cleared." });
 });
 
 app.post("/send_mail", (req, res) => {
@@ -97,6 +115,15 @@ app.post("/send_mail", (req, res) => {
     });
   }
 });
+
+function formatResponse(content) {
+  const formattedContent = content
+    .replace(/(?:\r\n|\r|\n)/g, "<br>") // Convert newlines to <br>
+    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") // Convert **text** to <strong>text</strong>
+    .replace(/`(.*?)`/g, "<code>$1</code>"); // Convert `text` to <code>text</code>
+
+  return `<div>${formattedContent}</div>`;
+}
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
