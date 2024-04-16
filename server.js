@@ -4,9 +4,13 @@ const cors = require("cors");
 require("dotenv").config();
 const nodemailer = require("nodemailer");
 const { google } = require("googleapis");
+const bodyParser = require("body-parser");
 
 const app = express();
 const port = process.env.PORT || 3001;
+
+// Parse JSON bodies
+app.use(bodyParser.json());
 
 // Replace 'YOUR_OPENAI_API_KEY' with your actual OpenAI API key
 const openaiApiKey = process.env.GPT;
@@ -30,20 +34,23 @@ app.get("/", async (req, res) => {
   res.send("Nothing to see here");
 });
 
-let memory = [];
+let userMemories = {};
 
 app.post("/api/chat-completions", async (req, res) => {
   try {
-    const { prompt } = req.body;
-    console.log("User prompt: ", prompt);
+    const { userSession, prompt } = req.body;
+    console.log("User prompt: ", prompt, userSession);
+
+    let currentUserMessages = userMemories[userSession] || [];
 
     const messages = [
       { role: "system", content: "You are a helpful assistant." },
-      ...memory.map((msg) => ({ role: "user", content: msg })),
+      ...currentUserMessages.map((msg) => ({ role: "user", content: msg })),
       { role: "user", content: prompt }, // Add the current prompt to the end
     ];
 
-    memory.push(prompt); // Push the current prompt to memory
+    currentUserMessages.push(prompt); // Push the current prompt to memory
+    userMemories[userSession] = currentUserMessages; // Update the memory for the current userSession
 
     const response = await axios.post(
       "https://api.openai.com/v1/chat/completions",
@@ -76,8 +83,10 @@ app.post("/api/chat-completions", async (req, res) => {
 
 // Route to clear the history
 app.post("/api/clear-history", (req, res) => {
-  memory = []; // Reset the memory array to an empty array
-  res.json({ message: "Conversation history cleared." });
+  const userSession = req.body.sessionId;
+  userMemories[userSession] = []; // Reset the memory array to an empty array
+  console.log("Conversation cleared for user: ", userSession);
+  res.send("Conversation history cleared.");
 });
 
 app.post("/send_mail", (req, res) => {
