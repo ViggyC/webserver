@@ -39,7 +39,7 @@ let userMemories = {};
 app.post("/api/chat-completions", async (req, res) => {
   try {
     const { userSession, prompt } = req.body;
-    console.log("User prompt: ", prompt, userSession);
+    console.log(`User ${userSession} prompt:\n`, prompt);
 
     let currentUserMessages = userMemories[userSession] || [];
 
@@ -72,6 +72,7 @@ app.post("/api/chat-completions", async (req, res) => {
     );
 
     res.send(formattedResponse);
+    console.log(`Database:\n ${JSON.stringify(userMemories)}`);
   } catch (error) {
     console.error(
       "Error:",
@@ -86,6 +87,7 @@ app.post("/api/clear-history", (req, res) => {
   const userSession = req.body.sessionId;
   userMemories[userSession] = []; // Reset the memory array to an empty array
   console.log("Conversation cleared for user: ", userSession);
+  console.log(`Database:\n ${JSON.stringify(userMemories)}`);
   res.send("Conversation history cleared.");
 });
 
